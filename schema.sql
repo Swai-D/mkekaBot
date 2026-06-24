@@ -1,15 +1,15 @@
 -- ================================================================
--- MKEKA BOT — PostgreSQL Schema
--- Yellow Cards Betting Analysis System
+-- MKEKA BOT — PostgreSQL Unified Schema (v3.3 & v3.4 Hybrid)
+-- Resolves conflicts between legacy normalized schemas and newer flat models
 -- ================================================================
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ================================================================
--- LEAGUES
+-- 1. LEAGUES
 -- ================================================================
-CREATE TABLE leagues (
+CREATE TABLE IF NOT EXISTS leagues (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   country VARCHAR(100),
@@ -19,17 +19,20 @@ CREATE TABLE leagues (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-INSERT INTO leagues (name, country, apify_id) VALUES
+-- Seed initial leagues if they don't exist
+INSERT INTO leagues (name, country, apify_id) 
+VALUES
   ('Premier League', 'England', 'epl'),
   ('La Liga', 'Spain', 'laliga'),
   ('Bundesliga', 'Germany', 'bundesliga'),
   ('Serie A', 'Italy', 'seriea'),
-  ('Ligue 1', 'France', 'ligue1');
+  ('Ligue 1', 'France', 'ligue1')
+ON CONFLICT DO NOTHING;
 
 -- ================================================================
--- REFEREES
+-- 2. REFEREES
 -- ================================================================
-CREATE TABLE referees (
+CREATE TABLE IF NOT EXISTS referees (
   id SERIAL PRIMARY KEY,
   name VARCHAR(150) NOT NULL UNIQUE,
   league_id INT REFERENCES leagues(id),
@@ -42,28 +45,26 @@ CREATE TABLE referees (
 );
 
 -- ================================================================
--- TEAMS
+-- 3. TEAMS
 -- ================================================================
-CREATE TABLE teams (
+CREATE TABLE IF NOT EXISTS teams (
   id SERIAL PRIMARY KEY,
   name VARCHAR(150) NOT NULL,
   league_id INT REFERENCES leagues(id),
   apify_id VARCHAR(100),
-  -- Cards discipline
   avg_cards_home DECIMAL(4,2) DEFAULT 0,
   avg_cards_away DECIMAL(4,2) DEFAULT 0,
   avg_yellows_per_game DECIMAL(4,2) DEFAULT 0,
   fouls_per_game DECIMAL(4,2) DEFAULT 0,
-  -- Form
   last_5_cards JSONB DEFAULT '[]', -- array of card counts last 5 games
   is_aggressive BOOLEAN DEFAULT false,
   last_updated TIMESTAMP DEFAULT NOW()
 );
 
 -- ================================================================
--- FIXTURES
+-- 4. FIXTURES
 -- ================================================================
-CREATE TABLE fixtures (
+CREATE TABLE IF NOT EXISTS fixtures (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   league_id INT REFERENCES leagues(id),
   home_team_id INT REFERENCES teams(id),
@@ -76,7 +77,6 @@ CREATE TABLE fixtures (
   is_cup BOOLEAN DEFAULT false,
   match_importance VARCHAR(20) DEFAULT 'normal', -- low, normal, high, critical
   status VARCHAR(30) DEFAULT 'scheduled', -- scheduled, live, finished, cancelled
-  -- Actual results (filled after game)
   actual_home_yellows INT,
   actual_away_yellows INT,
   actual_total_yellows INT,
@@ -86,9 +86,9 @@ CREATE TABLE fixtures (
 );
 
 -- ================================================================
--- H2H HISTORY
+-- 5. H2H HISTORY
 -- ================================================================
-CREATE TABLE h2h_records (
+CREATE TABLE IF NOT EXISTS h2h_records (
   id SERIAL PRIMARY KEY,
   home_team_id INT REFERENCES teams(id),
   away_team_id INT REFERENCES teams(id),
@@ -101,53 +101,75 @@ CREATE TABLE h2h_records (
 );
 
 -- ================================================================
--- PREDICTIONS (Bot Output)
+-- 6. PREDICTIONS (Unified Flat & Normalized Table)
+-- Supports both direct (flat) insertions and relational lookups
 -- ================================================================
-CREATE TABLE predictions (
+CREATE TABLE IF NOT EXISTS predictions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  fixture_id UUID REFERENCES fixtures(id),
-  prediction_date TIMESTAMP DEFAULT NOW(),
+  
+  -- Relational link (Legacy & structural compatibility)
+  fixture_id UUID REFERENCES fixtures(id) ON DELETE SET NULL,
+  
+  -- Flat parameters (Direct insertions from Next.js v3.3 scorer.js)
+  match_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  league VARCHAR(100) NOT NULL,
+  home_team VARCHAR(150) NOT NULL,
+  away_team VARCHAR(150) NOT NULL,
+  kickoff TIMESTAMP,
+  matchday INT,
+  referee_name VARCHAR(150),
+  
+  -- Bot outputs / Decisions
+  should_bet BOOLEAN NOT NULL DEFAULT false,
+  skip_reason TEXT, 
+  verdict VARCHAR(20),             -- 'BET' or 'SKIP'
+  bot_line DECIMAL(4,2),           -- AI estimated line
+  davy_line VARCHAR(10),           -- Safety/Betting line (e.g. '2.5', 'SKIP')
+  confidence DECIMAL(5,2),         -- Float/percentage
+  market_odds DECIMAL(6,2),        -- Current over line odds
+  opening_odds DECIMAL(6,2),
+  current_odds DECIMAL(6,2),
 
-  -- What the bot decided
-  should_bet BOOLEAN NOT NULL,
-  skip_reason TEXT, -- if should_bet = false, why?
-
-  -- Cards prediction
-  predicted_line DECIMAL(4,2), -- e.g. 3.5, 4.5
-  predicted_direction VARCHAR(10), -- OVER or UNDER
-  predicted_total_cards DECIMAL(4,2), -- bot's estimated total
-
-  -- Confidence
-  confidence_score INT CHECK (confidence_score BETWEEN 0 AND 100),
-  confidence_label VARCHAR(20), -- LOW, MEDIUM, HIGH, VERY_HIGH
-
-  -- Factor breakdown (what drove the decision)
-  factor_referee INT DEFAULT 0,       -- contribution 0-35
-  factor_home_discipline INT DEFAULT 0, -- contribution 0-20
-  factor_away_discipline INT DEFAULT 0, -- contribution 0-20
-  factor_derby INT DEFAULT 0,           -- contribution 0-15
-  factor_h2h INT DEFAULT 0,             -- contribution 0-10
-
-  -- Claude's reasoning
+  -- Legacy outputs for joins
+  predicted_line DECIMAL(4,2),
+  predicted_direction VARCHAR(10),
+  predicted_total_cards DECIMAL(4,2),
+  confidence_score INT,
+  confidence_label VARCHAR(20),
+  
+  -- Factor breakdown (Heuristic weights)
+  factor_referee INT DEFAULT 0,
+  factor_home_discipline INT DEFAULT 0,
+  factor_away_discipline INT DEFAULT 0,
+  factor_derby INT DEFAULT 0,
+  factor_h2h INT DEFAULT 0,
+  
+  -- Claude / AI Brain output
+  reasoning TEXT,
   ai_reasoning TEXT,
-  raw_data_snapshot JSONB, -- full data snapshot used for this prediction
-
-  -- Post-match outcome
-  outcome VARCHAR(20), -- WIN, LOSS, PUSH, PENDING
+  audit_trail JSONB DEFAULT '{}',   -- Analysis logs
+  warnings JSONB DEFAULT '[]',
+  raw_data_snapshot JSONB,
+  
+  -- Outcomes & Performance (Reconciliation data)
+  actual_cards INT,
+  home_cards_actual INT,
+  away_cards_actual INT,
+  result VARCHAR(20),              -- 'WIN' or 'LOSS'
+  outcome VARCHAR(20),             -- WIN, LOSS, PUSH, PENDING
   actual_total_cards INT,
   profit_loss DECIMAL(10,2),
-
-  -- Self-learning
   was_correct BOOLEAN,
-  error_magnitude DECIMAL(4,2), -- how far off the prediction was
-
+  error_magnitude DECIMAL(4,2),
+  reconciled_at TIMESTAMP,
+  
   created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ================================================================
--- MODEL WEIGHTS (Self-Learning)
+-- 7. MODEL WEIGHTS (Self-Learning Core)
 -- ================================================================
-CREATE TABLE model_weights (
+CREATE TABLE IF NOT EXISTS model_weights (
   id SERIAL PRIMARY KEY,
   weight_name VARCHAR(100) NOT NULL UNIQUE,
   current_value DECIMAL(6,4) NOT NULL,
@@ -159,7 +181,7 @@ CREATE TABLE model_weights (
   notes TEXT
 );
 
--- Initial weights
+-- Seed initial weights
 INSERT INTO model_weights (weight_name, current_value, initial_value, notes) VALUES
   ('referee_strictness', 0.35, 0.35, 'Weight for referee avg cards factor'),
   ('home_discipline', 0.20, 0.20, 'Weight for home team card history'),
@@ -167,12 +189,31 @@ INSERT INTO model_weights (weight_name, current_value, initial_value, notes) VAL
   ('derby_flag', 0.15, 0.15, 'Weight for derby/rivalry matches'),
   ('h2h_history', 0.10, 0.10, 'Weight for head-to-head card history'),
   ('confidence_threshold', 0.65, 0.65, 'Minimum confidence to recommend betting'),
-  ('min_data_games', 5.00, 5.00, 'Minimum games needed for reliable stats');
+  ('min_data_games', 5.00, 5.00, 'Minimum games needed for reliable stats')
+ON CONFLICT (weight_name) DO NOTHING;
 
 -- ================================================================
--- DAILY PERFORMANCE SUMMARY
+-- 8. PERFORMANCE & LEARNING CACHES
 -- ================================================================
-CREATE TABLE daily_performance (
+
+-- Team Stats Cache (avoid scraping historical stats repeatedly)
+CREATE TABLE IF NOT EXISTS team_stats_cache (
+  team_name VARCHAR(150) NOT NULL,
+  league VARCHAR(100) NOT NULL,
+  last5_cards_given JSONB DEFAULT '[]',
+  updated_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (team_name, league)
+);
+
+-- Referee Cache (consistency profiling)
+CREATE TABLE IF NOT EXISTS referee_cache (
+  referee_name VARCHAR(150) PRIMARY KEY,
+  last10_games_cards JSONB DEFAULT '[]',
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Daily Performance Logs
+CREATE TABLE IF NOT EXISTS daily_performance (
   id SERIAL PRIMARY KEY,
   summary_date DATE UNIQUE NOT NULL,
   total_predictions INT DEFAULT 0,
@@ -189,10 +230,29 @@ CREATE TABLE daily_performance (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- ================================================================
--- BOT ACTIVITY LOGS
--- ================================================================
-CREATE TABLE bot_logs (
+-- Reconciliation logs
+CREATE TABLE IF NOT EXISTS reconciliation_log (
+  id SERIAL PRIMARY KEY,
+  log_date DATE NOT NULL UNIQUE,
+  total_predictions INT,
+  wins INT,
+  losses INT,
+  win_rate_pct DECIMAL(5,2),
+  errors JSONB DEFAULT '[]',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Learning Logs (Feedback loops)
+CREATE TABLE IF NOT EXISTS learning_log (
+  id SERIAL PRIMARY KEY,
+  log_date DATE NOT NULL UNIQUE,
+  insights JSONB,
+  sample_size INT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Activity log
+CREATE TABLE IF NOT EXISTS bot_logs (
   id SERIAL PRIMARY KEY,
   log_date TIMESTAMP DEFAULT NOW(),
   log_type VARCHAR(50), -- SCRAPE, ANALYSIS, RECONCILE, WEIGHT_UPDATE, ERROR
@@ -203,64 +263,53 @@ CREATE TABLE bot_logs (
 );
 
 -- ================================================================
--- INDEXES for performance
+-- 9. PERFORMANCE INDEXES
 -- ================================================================
-CREATE INDEX idx_fixtures_date ON fixtures(match_date_local);
-CREATE INDEX idx_fixtures_status ON fixtures(status);
-CREATE INDEX idx_predictions_fixture ON predictions(fixture_id);
-CREATE INDEX idx_predictions_date ON predictions(prediction_date);
-CREATE INDEX idx_predictions_outcome ON predictions(outcome);
-CREATE INDEX idx_h2h_teams ON h2h_records(home_team_id, away_team_id);
-CREATE INDEX idx_bot_logs_date ON bot_logs(log_date);
+CREATE INDEX IF NOT EXISTS idx_fixtures_date ON fixtures(match_date_local);
+CREATE INDEX IF NOT EXISTS idx_fixtures_status ON fixtures(status);
+CREATE INDEX IF NOT EXISTS idx_predictions_date ON predictions(match_date);
+CREATE INDEX IF NOT EXISTS idx_predictions_verdict ON predictions(verdict);
+CREATE INDEX IF NOT EXISTS idx_predictions_result ON predictions(result);
+CREATE INDEX IF NOT EXISTS idx_h2h_teams ON h2h_records(home_team_id, away_team_id);
+CREATE INDEX IF NOT EXISTS idx_bot_logs_date ON bot_logs(log_date);
 
 -- ================================================================
--- VIEWS
+-- 10. COMPATIBILITY VIEWS
 -- ================================================================
 
--- Today's picks view
-CREATE VIEW v_todays_picks AS
+-- Today's Picks View (Works for both normalized structures and flat queries)
+CREATE OR REPLACE VIEW v_todays_picks AS
 SELECT
   p.id as prediction_id,
-  f.match_date,
-  hl.name as league,
-  ht.name as home_team,
-  at.name as away_team,
-  COALESCE(r.name, 'TBC') as referee,
-  COALESCE(r.avg_cards_per_game, 0) as referee_avg_cards,
-  COALESCE(r.strictness_rating, 'unknown') as referee_strictness,
+  p.match_date,
+  p.league,
+  p.home_team,
+  p.away_team,
+  COALESCE(p.referee_name, 'TBC') as referee,
   p.should_bet,
-  p.predicted_line,
-  p.predicted_direction,
-  p.predicted_total_cards,
-  p.confidence_score,
-  p.confidence_label,
-  p.ai_reasoning,
-  p.factor_referee,
-  p.factor_home_discipline,
-  p.factor_away_discipline,
-  p.factor_derby,
-  p.factor_h2h,
-  f.is_derby,
-  f.match_importance,
-  p.outcome
+  p.bot_line,
+  p.davy_line,
+  p.confidence,
+  p.market_odds,
+  p.reasoning,
+  p.audit_trail,
+  p.verdict,
+  p.result,
+  p.actual_cards
 FROM predictions p
-JOIN fixtures f ON p.fixture_id = f.id
-JOIN leagues hl ON f.league_id = hl.id
-JOIN teams ht ON f.home_team_id = ht.id
-JOIN teams at ON f.away_team_id = at.id
-LEFT JOIN referees r ON f.referee_id = r.id;
+WHERE p.match_date = CURRENT_DATE;
 
--- Model performance over time
-CREATE VIEW v_model_performance AS
+-- Model Performance over time
+CREATE OR REPLACE VIEW v_model_performance AS
 SELECT
-  DATE(prediction_date) as date,
+  match_date as date,
   COUNT(*) as total,
-  COUNT(*) FILTER (WHERE should_bet = true) as bets_recommended,
-  COUNT(*) FILTER (WHERE was_correct = true) as correct,
-  ROUND(100.0 * COUNT(*) FILTER (WHERE was_correct = true) / NULLIF(COUNT(*) FILTER (WHERE outcome != 'PENDING'), 0), 2) as accuracy_pct,
-  ROUND(AVG(confidence_score), 1) as avg_confidence,
+  COUNT(*) FILTER (WHERE verdict = 'BET') as bets_recommended,
+  COUNT(*) FILTER (WHERE result = 'WIN') as correct,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE result = 'WIN') / NULLIF(COUNT(*) FILTER (WHERE result IS NOT NULL), 0), 2) as accuracy_pct,
+  ROUND(AVG(confidence), 1) as avg_confidence,
   SUM(profit_loss) as total_pnl
 FROM predictions
-WHERE outcome != 'PENDING'
-GROUP BY DATE(prediction_date)
+WHERE result IS NOT NULL
+GROUP BY match_date
 ORDER BY date DESC;
