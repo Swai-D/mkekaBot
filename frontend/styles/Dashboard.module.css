@@ -1,0 +1,135 @@
+.app {
+  min-height: 100vh;
+  background: #080B14;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #1E2A3A;
+  background: #0D1117;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.headerLeft { display: flex; align-items: center; }
+.headerCenter { flex: 1; text-align: center; }
+.headerRight { display: flex; align-items: center; gap: 16px; }
+
+.logo { display: flex; align-items: center; gap: 12px; }
+.logoIcon { font-size: 24px; }
+.logoTitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 20px;
+  color: #F1F5F9;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.logoTitle span { color: #F59E0B; }
+.logoSub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-top: 3px;
+}
+
+.headerDate {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* ANALYZE BUTTON */
+.analyzeBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  border: none;
+  border-radius: 10px;
+  color: #080B14;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.analyzeBtn:hover { opacity: 0.9; transform: translateY(-1px); }
+.analyzeBtn:active { transform: translateY(0); }
+.analyzeBtn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.analyzing { animation: pulse 1.5s infinite; }
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #080B1466;
+  border-top-color: #080B14;
+  animation: spin 0.7s linear infinite;
+}
+
+.lastUpdated {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #334155;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  padding: 0 24px;
+  border-bottom: 1px solid #1E2A3A;
+  background: #0D1117;
+  gap: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #475569;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+.tab:hover { color: #94A3B8; }
+
+.activeTab {
+  color: #F59E0B;
+  border-bottom-color: #F59E0B;
+}
+
+.tabBadge {
+  background: #F59E0B22;
+  color: #F59E0B;
+  border: 1px solid #F59E0B44;
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* MAIN */
+.main {
+  padding-top: 28px;
+  animation: fadeIn 0.3s ease;
+}

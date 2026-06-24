@@ -1,0 +1,34 @@
+{
+  "name": "mkeka-bot",
+  "version": "3.0.0",
+  "description": "MkekaBOT — AI Yellow Cards Betting Analysis | Firecrawl + Claude",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "cron": "node lib/cron.js",
+    "scan": "node -e \"import('./lib/cron.js').then(m => m.runMorningScan())\"",
+    "reconcile": "node -e \"import('./lib/cron.js').then(m => m.runEveningReconcile())\""
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@anthropic-ai/sdk": "^0.24.0",
+    "@mendable/firecrawl-js": "^1.4.0",
+    "pg": "^8.12.0",
+    "node-cron": "^3.0.3",
+    "axios": "^1.7.2",
+    "date-fns": "^3.6.0",
+    "recharts": "^2.12.7",
+    "lucide-react": "^0.400.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0"
+  }
+}

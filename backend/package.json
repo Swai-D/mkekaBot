@@ -1,0 +1,24 @@
+{
+  "name": "mkeka-bot-backend",
+  "version": "1.0.0",
+  "description": "MkekaBOT - Yellow Cards Prediction Engine",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:setup": "psql $DATABASE_URL -f db/schema.sql"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "apify-client": "^2.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "node-cron": "^3.0.3",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
