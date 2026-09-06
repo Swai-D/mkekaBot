@@ -1,11 +1,7 @@
-/**
- * MkekaBOT — Dashboard
- * app/page.js
- */
-
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Dashboard() {
   const [predictions, setPredictions] = useState([]);
@@ -44,10 +40,10 @@ export default function Dashboard() {
         body: JSON.stringify({ mode: 'scan', league: 'all' }),
       });
       const data = await res.json();
-      alert(`✅ Scan complete: ${data.bets} bets, ${data.skipped} skipped`);
+      alert(`Scan complete: ${data.bets} bets, ${data.skipped} skipped`);
       await loadData();
     } catch (err) {
-      alert('❌ Scan failed: ' + err.message);
+      alert('Scan failed: ' + err.message);
     } finally {
       setScanning(false);
     }
@@ -62,328 +58,165 @@ export default function Dashboard() {
         body: JSON.stringify({ mode: 'auto' }),
       });
       const data = await res.json();
-      alert(`✅ Reconciled: ${data.wins}W / ${data.losses}L — Win rate: ${data.winRate}%`);
+      alert(`Reconciled: ${data.wins}W / ${data.losses}L — win rate ${data.winRate}%`);
       await loadData();
     } catch (err) {
-      alert('❌ Reconcile failed: ' + err.message);
+      alert('Reconcile failed: ' + err.message);
     } finally {
       setReconciling(false);
     }
   }
 
   return (
-    <div
-      style={{
-        background: '#0d0d0d',
-        minHeight: '100vh',
-        color: '#fff',
-        fontFamily: "'Outfit', sans-serif",
-        padding: '24px',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 24,
-        }}
-      >
+    <div className="shell">
+      <div className="header">
         <div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: '#FFD700' }}>
-            🎯 MkekaBOT{' '}
-            <span style={{ fontSize: 14, color: '#888', fontFamily: 'monospace' }}>v3.5</span>
-          </h1>
-          <p style={{ margin: '4px 0 0', color: '#888', fontSize: 13 }}>
-            Yellow Cards Intelligence — Dar es Salaam 🇹🇿
-          </p>
+          <div className="brand-name">
+            MkekaBOT
+            <span className="brand-version">v3.5</span>
+          </div>
+          <p className="brand-tagline">Yellow-cards betting intelligence for the Dar es Salaam market</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={runScan}
-            disabled={scanning}
-            style={{
-              background: '#FFD700',
-              color: '#000',
-              border: 'none',
-              borderRadius: 8,
-              padding: '10px 20px',
-              fontWeight: 700,
-              cursor: scanning ? 'not-allowed' : 'pointer',
-              opacity: scanning ? 0.6 : 1,
-            }}
-          >
-            {scanning ? 'Scanning...' : '⚡ Scan Today'}
+        <div className="actions">
+          <button onClick={runScan} disabled={scanning} className="btn btn-primary">
+            {scanning ? 'Scanning…' : 'Run scan'}
           </button>
-          <button
-            onClick={runReconcile}
-            disabled={reconciling}
-            style={{
-              background: '#1a1a1a',
-              color: '#FFD700',
-              border: '1px solid #FFD700',
-              borderRadius: 8,
-              padding: '10px 20px',
-              fontWeight: 700,
-              cursor: reconciling ? 'not-allowed' : 'pointer',
-              opacity: reconciling ? 0.6 : 1,
-            }}
-          >
-            {reconciling ? 'Reconciling...' : '🌙 Reconcile'}
+          <button onClick={runReconcile} disabled={reconciling} className="btn btn-secondary">
+            {reconciling ? 'Reconciling…' : 'Reconcile'}
           </button>
         </div>
       </div>
 
-      {/* Stats Row */}
       {stats?.overall && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 16,
-            marginBottom: 28,
-          }}
-        >
+        <div className="stat-strip">
           {[
-            { label: 'Total Bets (30d)', value: stats.overall.total_bets ?? '—' },
-            { label: 'Wins', value: stats.overall.wins ?? '—', color: '#22c55e' },
-            { label: 'Losses', value: stats.overall.losses ?? '—', color: '#ef4444' },
+            { label: 'Total bets (30d)', value: stats.overall.total_bets ?? '—' },
+            { label: 'Wins', value: stats.overall.wins ?? '—', tone: 'up' },
+            { label: 'Losses', value: stats.overall.losses ?? '—', tone: 'down' },
             {
-              label: 'Win Rate',
+              label: 'Win rate',
               value: stats.overall.win_rate_pct ? stats.overall.win_rate_pct + '%' : '—',
-              color: '#FFD700',
+              tone: 'accent',
             },
           ].map((s) => (
-            <div
-              key={s.label}
-              style={{ background: '#1a1a1a', borderRadius: 12, padding: 18, textAlign: 'center' }}
-            >
-              <div style={{ fontSize: 28, fontWeight: 700, color: s.color ?? '#fff' }}>
+            <div key={s.label} className="stat">
+              <div
+                className="stat-value"
+                style={
+                  s.tone === 'up'
+                    ? { color: 'var(--win-green)' }
+                    : s.tone === 'down'
+                      ? { color: 'var(--card-red)' }
+                      : s.tone === 'accent'
+                        ? { color: 'var(--card-yellow)' }
+                        : undefined
+                }
+              >
                 {s.value}
               </div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{s.label}</div>
+              <div className="stat-label">{s.label}</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Today&apos;s Predictions */}
-      <h2 style={{ color: '#FFD700', marginBottom: 16, fontSize: 16 }}>
-        📅 Today&apos;s Predictions
-      </h2>
+      <h2 className="section-title">Today&apos;s predictions</h2>
 
       {loading ? (
-        <div style={{ color: '#888', textAlign: 'center', padding: 40 }}>Loading...</div>
+        <div className="empty-state">
+          <p>Loading board…</p>
+        </div>
       ) : predictions.length === 0 ? (
-        <div style={{ color: '#888', textAlign: 'center', padding: 40 }}>
-          <p style={{ margin: '0 0 8px' }}>No predictions yet.</p>
-          <p style={{ margin: 0, fontSize: 13 }}>
-            CSV + Mock AI mode: click &quot;Scan Today&quot; to analyze curated matches — no API
-            cost.
-          </p>
+        <div className="empty-state">
+          <p>No fixtures scanned yet.</p>
+          <p>Run a scan to populate today&apos;s board — current fixtures, no API cost in mock mode.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {predictions.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                background: '#1a1a1a',
-                borderRadius: 12,
-                padding: 16,
-                borderLeft: `4px solid ${
-                  p.result === 'WIN'
-                    ? '#22c55e'
-                    : p.result === 'LOSS'
-                      ? '#ef4444'
-                      : p.verdict === 'BET'
-                        ? '#FFD700'
-                        : '#444'
-                }`,
-              }}
-            >
+        <div className="predictions">
+          {predictions.map((p) => {
+            const resultKey = p.result === 'WIN' ? 'win' : p.result === 'LOSS' ? 'loss' : null;
+            return (
               <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                }}
+                key={p.id}
+                className="prediction-row"
+                data-verdict={p.verdict === 'BET' ? 'bet' : undefined}
+                data-result={resultKey ?? undefined}
               >
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>
-                    {p.home_team} vs {p.away_team}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                    {p.league} · MD{p.matchday ?? '?'} · {p.kickoff ?? ''}
-                    {p.referee_name && ` · Ref: ${p.referee_name}`}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span
-                    style={{
-                      background: p.verdict === 'BET' ? '#FFD700' : '#333',
-                      color: p.verdict === 'BET' ? '#000' : '#888',
-                      borderRadius: 6,
-                      padding: '3px 10px',
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {p.verdict}
-                  </span>
-                  {p.result && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        background: p.result === 'WIN' ? '#22c55e20' : '#ef444420',
-                        color: p.result === 'WIN' ? '#22c55e' : '#ef4444',
-                        borderRadius: 6,
-                        padding: '3px 10px',
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {p.result} {p.actual_cards !== null ? `(${p.actual_cards} cards)` : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {p.verdict === 'BET' && (
-                <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 13 }}>
-                    <span style={{ color: '#888' }}>Bot line: </span>
-                    <span style={{ color: '#fff' }}>OVER {p.bot_line}</span>
-                  </div>
-                  <div style={{ fontSize: 13 }}>
-                    <span style={{ color: '#888' }}>Davy line: </span>
-                    <span style={{ color: '#FFD700', fontWeight: 700 }}>OVER {p.davy_line}</span>
-                  </div>
-                  <div style={{ fontSize: 13 }}>
-                    <span style={{ color: '#888' }}>Confidence: </span>
-                    <span style={{ color: '#fff' }}>{p.confidence}%</span>
-                  </div>
-                  {p.market_odds && (
-                    <div style={{ fontSize: 13 }}>
-                      <span style={{ color: '#888' }}>Odds: </span>
-                      <span style={{ color: '#fff' }}>{p.market_odds}</span>
+                <div className="prediction-head">
+                  <div>
+                    <div className="match-name">{p.home_team} vs {p.away_team}</div>
+                    <div className="match-meta">
+                      <span>{p.league}</span>
+                      <span>MD {p.matchday ?? '?'}</span>
+                      {p.kickoff && <span className="mono">{p.kickoff}</span>}
+                      {p.referee_name && <span>Ref: {p.referee_name}</span>}
                     </div>
-                  )}
-                  {p.opening_odds && p.current_odds && (
-                    <div style={{ fontSize: 13 }}>
-                      <span style={{ color: '#888' }}>Movement: </span>
-                      <span
-                        style={{
-                          color:
-                            p.current_odds < p.opening_odds
-                              ? '#22c55e'
-                              : p.current_odds > p.opening_odds
-                                ? '#ef4444'
-                                : '#888',
-                        }}
-                      >
-                        {p.opening_odds} → {p.current_odds}
+                  </div>
+                  <div className="tags">
+                    <span className={`tag ${p.verdict === 'BET' ? 'tag-bet' : 'tag-pass'}`}>{p.verdict}</span>
+                    {p.result && (
+                      <span className={`tag ${resultKey === 'win' ? 'tag-win' : 'tag-loss'}`}>
+                        {p.result}{p.actual_cards !== null ? ` · ${p.actual_cards} cards` : ''}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              )}
 
-              {p.reasoning && (
-                <div style={{ marginTop: 10, fontSize: 12, color: '#aaa', lineHeight: 1.5 }}>
-                  {p.reasoning}
-                </div>
-              )}
+                {p.verdict === 'BET' && (
+                  <div className="data-strip">
+                    <div className="data-point"><span className="data-point-label">Bot line</span><span className="data-point-value">OVER {p.bot_line}</span></div>
+                    <div className="data-point"><span className="data-point-label">Davy line</span><span className="data-point-value accent">OVER {p.davy_line}</span></div>
+                    <div className="data-point"><span className="data-point-label">Confidence</span><span className="data-point-value">{p.confidence}%</span></div>
+                    {p.market_odds && <div className="data-point"><span className="data-point-label">Odds</span><span className="data-point-value">{p.market_odds}</span></div>}
+                    {p.opening_odds && p.current_odds && (
+                      <div className="data-point"><span className="data-point-label">Movement</span><span className={`data-point-value ${p.current_odds < p.opening_odds ? 'up' : p.current_odds > p.opening_odds ? 'down' : ''}`}>{p.opening_odds} → {p.current_odds}</span></div>
+                    )}
+                  </div>
+                )}
 
-              {/* Audit Trail Toggle */}
-              {p.audit_trail && (
-                <div style={{ marginTop: 8 }}>
-                  <button
-                    onClick={() => setAuditOpen(auditOpen === p.id ? null : p.id)}
-                    style={{
-                      background: 'none',
-                      border: '1px solid #333',
-                      color: '#666',
-                      borderRadius: 4,
-                      padding: '3px 10px',
-                      fontSize: 11,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {auditOpen === p.id ? '▲ Hide' : '▼ Audit trail'}
-                  </button>
-                  {auditOpen === p.id && (
-                    <div style={{ marginTop: 8, background: '#111', borderRadius: 8, padding: 12 }}>
-                      {Object.entries(p.audit_trail).map(([step, note]) => (
-                        <div
-                          key={step}
-                          style={{
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: '#888',
-                            marginBottom: 3,
-                          }}
-                        >
-                          <span style={{ color: '#FFD700' }}>{step}:</span> {note}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                {p.reasoning && <div className="reasoning">{p.reasoning}</div>}
+
+                {p.audit_trail && (
+                  <div>
+                    <button onClick={() => setAuditOpen(auditOpen === p.id ? null : p.id)} className="audit-toggle">
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {auditOpen === p.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Audit trail
+                      </span>
+                    </button>
+                    {auditOpen === p.id && (
+                      <div className="audit-trail">
+                        {Object.entries(p.audit_trail).map(([step, note]) => (
+                          <div key={step} className="audit-line"><span className="audit-line-step">{step}:</span> {note}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* By League Stats */}
       {stats?.byLeague?.length > 0 && (
-        <div style={{ marginTop: 32 }}>
-          <h2 style={{ color: '#FFD700', marginBottom: 16, fontSize: 16 }}>
-            📊 Performance by League (30d)
-          </h2>
-          <div style={{ background: '#1a1a1a', borderRadius: 12, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #333' }}>
-                  {['League', 'Bets', 'W', 'L', 'Win %', 'Avg Conf'].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: '10px 14px',
-                        textAlign: 'left',
-                        color: '#888',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {stats.byLeague.map((row) => (
-                  <tr key={row.league} style={{ borderBottom: '1px solid #1f1f1f' }}>
-                    <td style={{ padding: '10px 14px' }}>{row.league}</td>
-                    <td style={{ padding: '10px 14px' }}>{row.total_bets}</td>
-                    <td style={{ padding: '10px 14px', color: '#22c55e' }}>{row.wins ?? 0}</td>
-                    <td style={{ padding: '10px 14px', color: '#ef4444' }}>{row.losses ?? 0}</td>
-                    <td style={{ padding: '10px 14px', color: '#FFD700', fontWeight: 700 }}>
-                      {row.win_rate_pct ?? '—'}%
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>{row.avg_confidence ?? '—'}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="section-block">
+          <h2 className="section-title">Performance by league (30d)</h2>
+          <table className="league-table">
+            <thead><tr>{['League', 'Bets', 'W', 'L', 'Win %', 'Avg conf'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+            <tbody>{stats.byLeague.map((row) => (
+              <tr key={row.league}>
+                <td>{row.league}</td><td>{row.total_bets}</td>
+                <td style={{ color: 'var(--win-green)' }}>{row.wins ?? 0}</td>
+                <td style={{ color: 'var(--card-red)' }}>{row.losses ?? 0}</td>
+                <td style={{ color: 'var(--card-yellow)', fontWeight: 700 }}>{row.win_rate_pct ?? '—'}%</td>
+                <td>{row.avg_confidence ?? '—'}%</td>
+              </tr>
+            ))}</tbody>
+          </table>
         </div>
       )}
 
-      <div style={{ marginTop: 32, textAlign: 'center', color: '#444', fontSize: 11 }}>
-        MkekaBOT v3.5 · Dar es Salaam · {new Date().getFullYear()}
-      </div>
+      <div className="footer">MkekaBOT v3.5 · Dar es Salaam · {new Date().getFullYear()}</div>
     </div>
   );
 }
