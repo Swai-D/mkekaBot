@@ -7,6 +7,15 @@
 
 import { useState, useEffect } from 'react';
 
+const PAGE_SIZE = 8;
+
+function initials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function Dashboard() {
   const [predictions, setPredictions] = useState([]);
   const [stats, setStats] = useState(null);
@@ -14,6 +23,7 @@ export default function Dashboard() {
   const [scanning, setScanning] = useState(false);
   const [reconciling, setReconciling] = useState(false);
   const [auditOpen, setAuditOpen] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     loadData();
@@ -28,6 +38,7 @@ export default function Dashboard() {
       ]);
       setPredictions(predRes.predictions ?? []);
       setStats(statsRes);
+      setPage(1);
     } catch (err) {
       console.error(err);
     } finally {
@@ -184,21 +195,28 @@ export default function Dashboard() {
           </p>
         </div>
       ) : (
-        <div className="prediction-grid">
-          {predictions.map((p) => (
+        <>
+        <div className="match-list">
+          {predictions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((p) => (
             <div
               key={p.id}
               className={`match-card ${p.result === 'WIN' ? 'match-card-win' : p.result === 'LOSS' ? 'match-card-loss' : p.verdict === 'BET' ? 'match-card-bet' : ''}`}
             >
+              <div className="match-card-kicker">
+                <span>{p.league}</span>
+                <span>MD{p.matchday ?? '?'}</span>
+                <span className="mono">{p.kickoff ?? 'Kickoff TBC'}</span>
+              </div>
               <div className="match-card-head">
-                <div className="match-card-copy">
-                  <div className="match-card-kicker">{p.league} <span>MD{p.matchday ?? '?'}</span></div>
-                  <div className="match-card-teams">
-                    <span>{p.home_team}</span><b>vs</b><span>{p.away_team}</span>
+                <div className="match-card-fixture">
+                  <div className="match-card-side">
+                    <span className="team-avatar">{initials(p.home_team)}</span>
+                    <span className="team-name">{p.home_team}</span>
                   </div>
-                  <div className="match-card-meta">
-                    <span>{p.kickoff ?? 'Kickoff TBC'}</span>
-                    {p.referee_name && <span>Ref: {p.referee_name}</span>}
+                  <span className="match-card-vs">vs</span>
+                  <div className="match-card-side match-card-side-away">
+                    <span className="team-name">{p.away_team}</span>
+                    <span className="team-avatar">{initials(p.away_team)}</span>
                   </div>
                 </div>
                 <div className="match-card-status">
@@ -210,6 +228,8 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
+
+              {p.referee_name && <div className="match-card-ref">Referee: {p.referee_name}</div>}
 
               {p.verdict === 'BET' && (
                 <div className="match-card-data">
@@ -247,6 +267,21 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+        {predictions.length > PAGE_SIZE && (
+          <div className="pagination">
+            <button className="pagination-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+              ‹ Prev
+            </button>
+            <span className="pagination-info">
+              Page {page} / {Math.ceil(predictions.length / PAGE_SIZE)}
+              <span className="pagination-count"> · {predictions.length} matches</span>
+            </span>
+            <button className="pagination-btn" onClick={() => setPage((p) => Math.min(Math.ceil(predictions.length / PAGE_SIZE), p + 1))} disabled={page >= Math.ceil(predictions.length / PAGE_SIZE)}>
+              Next ›
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {/* By League Stats */}
