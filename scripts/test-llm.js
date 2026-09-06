@@ -6,18 +6,39 @@
 import 'dotenv/config';
 import OpenAI from 'openai';
 
-const apiKey = process.env.LLM_API_KEY || process.env.GROQ_API_KEY || process.env.KIMI_API_KEY;
-const baseURL = process.env.LLM_BASE_URL || 'https://api.groq.com/openai/v1';
-const model = process.env.LLM_MODEL || 'llama-3.3-70b-versatile';
+const provider = (process.env.LLM_PROVIDER || 'groq').toLowerCase();
+const providerDefaults = {
+  groq: {
+    baseURL: 'https://api.groq.com/openai/v1',
+    model: 'llama-3.3-70b-versatile',
+  },
+  openrouter: {
+    baseURL: 'https://openrouter.ai/api/v1',
+    model: 'openai/gpt-4o-mini',
+  },
+};
+const defaults = providerDefaults[provider] || providerDefaults.groq;
+const providerApiKey =
+  provider === 'openrouter'
+    ? process.env.OPENROUTER_API_KEY
+    : provider === 'groq'
+      ? process.env.GROQ_API_KEY
+      : provider === 'kimi'
+        ? process.env.KIMI_API_KEY
+        : null;
+const apiKey = providerApiKey || process.env.LLM_API_KEY;
+const baseURL = process.env.LLM_BASE_URL || defaults.baseURL;
+const model = process.env.LLM_MODEL || defaults.model;
 
 console.log('LLM connection test');
+console.log('Provider:', provider);
 console.log('Base URL:', baseURL);
 console.log('Model:', model);
 console.log('API key present:', apiKey ? 'yes' : 'NO');
 console.log('API key prefix:', apiKey ? apiKey.slice(0, 12) + '...' : 'N/A');
 
 if (!apiKey) {
-  console.error('\n❌ LLM_API_KEY / GROQ_API_KEY / KIMI_API_KEY is missing.');
+  console.error('\n❌ LLM_API_KEY / OPENROUTER_API_KEY / GROQ_API_KEY / KIMI_API_KEY is missing.');
   console.error('Add one to .env.local');
   process.exit(1);
 }

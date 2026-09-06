@@ -25,7 +25,7 @@ CREATE TABLE predictions (
   ref_confirmed    BOOLEAN DEFAULT false,
 
   bot_line         DECIMAL(4,2),
-  davy_line        VARCHAR(10),
+  davy_line        DECIMAL(4,2),
   confidence       DECIMAL(5,2),
   market_odds      DECIMAL(6,2),
   opening_odds     DECIMAL(6,2),
@@ -35,6 +35,8 @@ CREATE TABLE predictions (
   audit_trail      JSONB DEFAULT '{}',
   warnings         JSONB DEFAULT '[]',
   verdict          VARCHAR(20) NOT NULL CHECK (verdict IN ('BET','SKIP')),
+  should_bet       BOOLEAN NOT NULL DEFAULT false,
+  skip_reason      TEXT,
   data_quality     JSONB DEFAULT '{}',
 
   actual_cards     INT,

@@ -61,11 +61,11 @@ psql mkeka_bot < schema.sql
 ### 3. Environment Variables
 ```bash
 cp .env.example .env.local
-# Fill in:
-# DATABASE_URL
-# AI_PROVIDER (GROQ | KIMI | OPENROUTER | GOOGLE | MOCK)
-# GROQ_API_KEY (from groq.com)
-# FIRECRAWL_API_KEY (from firecrawl.dev)
+# Fill in DATABASE_URL and FIRECRAWL_API_KEY, then choose one LLM setup:
+# Groq:       LLM_PROVIDER=groq, LLM_API_KEY=... (or GROQ_API_KEY=...)
+# OpenRouter: LLM_PROVIDER=openrouter, OPENROUTER_API_KEY=...
+# Optional:   LLM_MODEL=provider/model-name
+# Set USE_MOCK_AI=false to enable the real LLM; true uses the free local mock.
 ```
 
 ### 4. Firecrawl / Data Sources
