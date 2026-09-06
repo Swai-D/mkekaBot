@@ -3,14 +3,15 @@
  * Returns win/loss stats by league, date range, confidence
  */
 
-import { getStats, getTodaysPredictions } from "../../../lib/scorer.js";
-import { query } from "../../../lib/db.js";
+import { getStats, getTodaysPredictions } from '../../../lib/scorer.js';
+import { query } from '../../../lib/db.js';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const days   = parseInt(searchParams.get("days") ?? "30");
-    const league = searchParams.get("league") ?? null;
+    const days = parseInt(searchParams.get('days') ?? '30');
 
     const [stats, today, recentLearning] = await Promise.all([
       getStats(days),
@@ -41,7 +42,7 @@ export async function GET(request) {
       latestLearningInsights: recentLearning.rows[0]?.insights ?? null,
     });
   } catch (err) {
-    console.error("[API/stats]", err.message);
+    console.error('[API/stats]', err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

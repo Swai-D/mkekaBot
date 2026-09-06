@@ -1,34 +1,46 @@
 {
   "name": "mkeka-bot",
-  "version": "3.0.0",
-  "description": "MkekaBOT — AI Yellow Cards Betting Analysis | Firecrawl + Claude",
+  "version": "3.5.0",
+  "description": "MkekaBOT v3.5 — AI Yellow Cards Betting Intelligence (provider-agnostic LLM)",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "cron": "node lib/cron.js",
-    "scan": "node -e \"import('./lib/cron.js').then(m => m.runMorningScan())\"",
-    "reconcile": "node -e \"import('./lib/cron.js').then(m => m.runEveningReconcile())\""
+    "cron": "RUN_CRON=true node lib/cron.js",
+    "scan": "node --env-file=.env.local -e \"import('./lib/scorer.js').then(m => m.analyzeAndSaveFixtures('all').then(r => { console.log(r); process.exit(0); }))\"",
+    "reconcile": "node --env-file=.env.local -e \"import('./lib/scorer.js').then(m => m.runEveningReconciliation().then(r => { console.log(r); process.exit(0); }))\"",
+    "test:llm": "node --env-file=.env.local scripts/test-llm.js",
+    "db:setup": "psql $DATABASE_URL < schema.sql",
+    "db:reset": "psql $DATABASE_URL -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;' && npm run db:setup",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@mendable/firecrawl-js": "^1.4.0",
+    "axios": "^1.7.2",
+    "clsx": "^2.1.1",
+    "csv-parse": "^7.0.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "lucide-react": "^0.400.0",
     "next": "^14.2.0",
+    "node-cron": "^3.0.3",
+    "openai": "^4.85.0",
+    "pg": "^8.12.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@anthropic-ai/sdk": "^0.24.0",
-    "@mendable/firecrawl-js": "^1.4.0",
-    "pg": "^8.12.0",
-    "node-cron": "^3.0.3",
-    "axios": "^1.7.2",
-    "date-fns": "^3.6.0",
-    "recharts": "^2.12.7",
-    "lucide-react": "^0.400.0",
-    "clsx": "^2.1.1",
-    "dotenv": "^16.4.5"
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/react": "^18.0.0"
+    "@types/react": "^18.0.0",
+    "eslint": "^8",
+    "eslint-config-next": "^14.2.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.0"
   }
 }

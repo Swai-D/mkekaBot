@@ -1,8 +1,8 @@
-import "./globals.css";
+import './globals.css';
 
 export const metadata = {
-  title: "MkekaBOT v3.3",
-  description: "Yellow Cards Betting Intelligence",
+  title: 'MkekaBOT v3.5',
+  description: 'Yellow Cards Betting Intelligence',
 };
 
 export default function RootLayout({ children }) {

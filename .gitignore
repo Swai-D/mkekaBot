@@ -1,26 +1,57 @@
-# Node modules
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Next.js build output
+# Next.js
 .next/
+out/
 
-# Local env files
-.env*
-!.env.example
-!*.example
+# Environment
+.env
+.env.local
+.env.*.local
 
+# ML Models (large files — store separately)
+models/
+*.safetensors
+*.gguf
+*.bin
+*.pkl
+*.pt
+*.pth
+
+# DataForge outputs (large CSV files)
+data/final/
+data/processed/
+data/raw/
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+ai_service/__pycache__/
 
 # Logs
+*.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# VS Code
-.vscode/
+# Build
+dist/
+build/
 
-# Temporary files
-*.log
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Personal notes / chat exports
+mkeka-bot-chats.md
+mkekabot-qwen-instructions.md

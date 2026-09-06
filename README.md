@@ -1,16 +1,17 @@
 # ⚡ MkekaBOT — Yellow Cards Intelligence System
 
 > AI-powered football yellow cards betting analysis. Built for professional bettors.
+> v3.5 — Provider-agnostic AI core. Default: Groq (OpenAI-compatible).
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-Apify (Web Scraping)
-  ↓ FlashScore | FootyStats | WhoScored
+Firecrawl (Web Scraping)
+  ↓ FlashScore | FootyStats | Adamchoi
 Node.js Backend (Processing)
-  ↓ Scoring Engine + Claude AI Brain
+  ↓ Scoring Engine + AI Brain (Kimi / Groq / OpenRouter / Google)
 PostgreSQL (Memory + Learning)
   ↓ Predictions | Weights | History
 Next.js Dashboard (Your Interface)
@@ -26,14 +27,14 @@ Every morning the bot:
 2. **Scrapes** referee stats (most important factor!)
 3. **Scrapes** team card discipline data
 4. **Scrapes** H2H history
-5. **Sends** all data to Claude AI for analysis
-6. **Claude decides**: Should I bet? Which line? Over or Under?
+5. **Sends** all data to the configured AI provider for analysis
+6. **AI decides**: Should I bet? Which line? Over or Under?
 7. **Displays** picks on your dashboard with confidence scores
 
 Every evening:
 1. **Fetches** actual match results
 2. **Compares** predictions vs reality
-3. **Claude analyzes** errors and patterns
+3. **AI analyzes** errors and patterns
 4. **Adjusts** model weights automatically
 5. **Bot gets smarter** every single day
 
@@ -62,17 +63,18 @@ psql mkeka_bot < schema.sql
 cp .env.example .env.local
 # Fill in:
 # DATABASE_URL
-# ANTHROPIC_API_KEY (from console.anthropic.com)
-# APIFY_API_TOKEN (from console.apify.com)
+# AI_PROVIDER (GROQ | KIMI | OPENROUTER | GOOGLE | MOCK)
+# GROQ_API_KEY (from groq.com)
+# FIRECRAWL_API_KEY (from firecrawl.dev)
 ```
 
-### 4. Apify Actors Setup
-In your Apify console, you'll need:
-- FlashScore scraper (for fixtures + results)
-- FootyStats scraper (for team card stats)
-- WhoScored scraper (for referee stats)
+### 4. Firecrawl / Data Sources
+We scrape (via Firecrawl) from:
+- FlashScore (fixtures + results)
+- FootyStats (team card stats)
+- Adamchoi (referee stats)
 
-You can use the ready-made actors or modify the pageFunction in `lib/apify.js`.
+You can tweak the extraction prompts in `lib/firecrawl.js` if data quality drops.
 
 ### 5. Run Development
 ```bash
@@ -140,7 +142,7 @@ RUN_CRON=true node lib/cron.js
 ## 📈 Self-Learning System
 
 The bot tracks every prediction and outcome. After each day:
-- Claude analyzes which factors predicted correctly
+- The configured AI analyzes which factors predicted correctly
 - Model weights adjust automatically (±0.05 max per day)
 - After 2-3 weeks, bot accuracy improves significantly
 
@@ -174,8 +176,10 @@ mkeka-bot/
 │       └── stats/           # Performance data
 ├── lib/
 │   ├── db.js               # PostgreSQL connection
-│   ├── apify.js            # Web scraping engine
-│   ├── claude.js           # AI brain (THE MAIN ENGINE)
+│   ├── firecrawl.js        # Web scraping engine
+│   ├── ai.js               # Provider-agnostic AI brain
+│   ├── providers/          # Per-provider clients (kimi, groq, ...)
+│   ├── kimi.js             # Legacy Kimi brain (kept for compatibility)
 │   ├── scorer.js           # Data processing + DB ops
 │   └── cron.js             # Scheduled jobs
 ├── schema.sql              # Full database schema
@@ -195,4 +199,4 @@ This system is a **decision support tool**. Always:
 
 ---
 
-*MkekaBOT — Built for Dar es Salaam, powered by AI*
+*MkekaBOT — Built for Dar es Salaam, powered by any LLM you trust ⚡*
